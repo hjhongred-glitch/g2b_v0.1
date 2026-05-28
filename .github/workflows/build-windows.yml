@@ -28,60 +28,38 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install flet-desktop==0.85.2
           pip install pyinstaller
-
-      - name: Show flet-desktop viewer path
-        shell: pwsh
-        run: |
-          python -c "
-          import flet_desktop, os
-          pkg = os.path.dirname(flet_desktop.__file__)
-          print('flet_desktop dir:', pkg)
-          for r, d, files in os.walk(pkg):
-              for f in files:
-                  print(' ', os.path.join(r, f))
-          "
 
       - name: Build executable
         shell: pwsh
         run: |
-          # flet viewer binary path (flet-desktop 패키지 내부)
-          $viewerSrc = python -c "
-          import flet_desktop, os
-          pkg = os.path.dirname(flet_desktop.__file__)
-          for r, d, files in os.walk(pkg):
-              for f in files:
-                  if f.lower() == 'flet.exe':
-                      print(os.path.join(r, f))
-          "
-          $viewerSrc = $viewerSrc.Trim()
-
-          $commonArgs = @(
+          $args = @(
             "app.py",
             "--name", "조달청알리미",
             "--onefile",
             "--windowed",
             "--collect-all", "flet",
-            "--collect-all", "flet_desktop",
             "--hidden-import", "flet",
-            "--hidden-import", "flet_desktop",
             "--hidden-import", "keyring.backends.Windows",
             "--hidden-import", "APScheduler"
           )
 
-          if (Test-Path "assets/icon.ico") {
-            $commonArgs += @("--icon", "assets\icon.ico")
-          }
-
-          if ($viewerSrc -and (Test-Path $viewerSrc)) {
-            Write-Host "Bundling flet viewer: $viewerSrc"
-            $commonArgs += @("--add-data", "${viewerSrc};flet\bin")
+          # flet_desktop 수집 (있을 경우)
+          $hasDesktop = python -c "import flet_desktop" 2>$null; $?
+          if ($hasDesktop) {
+            $args += @("--collect-all", "flet_desktop")
+            Write-Host "flet_desktop included"
           } else {
-            Write-Host "flet.exe not found — skipping viewer bundle"
+            Write-Host "flet_desktop not found, skipping"
           }
 
-          Write-Host "Running: python -m PyInstaller $commonArgs"
-          & python -m PyInstaller @commonArgs
+          if (Test-Path "assets/icon.ico") {
+            $args += @("--icon", "assets\icon.ico")
+          }
+
+          Write-Host "Running: python -m PyInstaller $args"
+          & python -m PyInstaller @args
 
       - name: Verify build output
         run: dir dist\
