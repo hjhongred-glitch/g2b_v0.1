@@ -1,0 +1,67 @@
+name: Build Windows Executable
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "버전 (예: 1.0.0)"
+        required: false
+        default: "1.0.0"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build executable
+        shell: pwsh
+        run: |
+          $iconArg = ""
+          if (Test-Path "assets\icon.ico") {
+            $iconArg = "--icon assets\icon.ico"
+          }
+          $cmd = "flet pack app.py --name 조달청알리미 --product-name 조달청알리미 --product-version 1.0.0 --file-description `"조달청 나라장터 입찰공고 알리미`" $iconArg"
+          Write-Host "Running: $cmd"
+          Invoke-Expression $cmd
+
+      - name: Verify build output
+        run: dir dist\
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 조달청알리미-windows
+          path: dist/조달청알리미.exe
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/조달청알리미.exe
+          name: "조달청알리미 ${{ github.ref_name }}"
+          body: |
+            ## 조달청알리미 ${{ github.ref_name }}
+
+            ### 설치 방법
+            1. `조달청알리미.exe` 다운로드
+            2. 실행 (별도 설치 불필요)
+
+            ### 시스템 요구사항
+            - Windows 10 / 11 (64비트)

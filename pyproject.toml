@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "조달청알리미"
+version = "1.0.0"
+description = "조달청 나라장터 입찰공고 알리미 데스크톱 앱"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+    "flet>=0.24",
+    "keyring>=24.0",
+    "platformdirs>=4.0",
+    "APScheduler>=3.10,<4.0",
+    "pystray>=0.19",
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-mock>=3.0"]
+
+[project.scripts]
+narajangteo-gui = "app:main"
+narajangteo-cli = "cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["core", "config", "scheduler", "ui"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

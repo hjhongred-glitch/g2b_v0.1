@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# App data
+*.log
+logs/
+config.json
+keyring_*.json
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# 공고 출력 파일
+공고_*.csv
+공고_*.html
