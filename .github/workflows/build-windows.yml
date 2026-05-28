@@ -36,35 +36,44 @@ jobs:
           pip install flet-desktop==0.85.2
           pip install pyinstaller
 
+      - name: Pre-download flet Windows viewer into package
+        shell: pwsh
+        run: |
+          # flet_desktop/app/ 폴더에 flet-windows.zip을 넣으면
+          # ensure_client_cached()가 인터넷 다운로드 대신 번들 zip을 사용함
+          $appDir = python -c "import flet_desktop, os; print(os.path.join(os.path.dirname(flet_desktop.__file__), 'app'))"
+          $appDir = $appDir.Trim()
+          Write-Host "flet_desktop app dir: $appDir"
+          New-Item -ItemType Directory -Force -Path $appDir | Out-Null
+
+          $ver = "0.85.2"
+          $url = "https://github.com/flet-dev/flet/releases/download/v${ver}/flet-windows.zip"
+          $dest = "$appDir\flet-windows.zip"
+          Write-Host "Downloading $url -> $dest"
+          Invoke-WebRequest -Uri $url -OutFile $dest
+          Write-Host "Download complete: $(Get-Item $dest | Select-Object -ExpandProperty Length) bytes"
+
       - name: Build executable
         shell: pwsh
         run: |
-          $args = @(
+          $buildArgs = @(
             "app.py",
             "--name", "조달청알리미",
             "--onefile",
             "--windowed",
             "--collect-all", "flet",
+            "--collect-all", "flet_desktop",
             "--hidden-import", "flet",
             "--hidden-import", "keyring.backends.Windows",
             "--hidden-import", "APScheduler"
           )
 
-          # flet_desktop 수집 (있을 경우)
-          $hasDesktop = python -c "import flet_desktop" 2>$null; $?
-          if ($hasDesktop) {
-            $args += @("--collect-all", "flet_desktop")
-            Write-Host "flet_desktop included"
-          } else {
-            Write-Host "flet_desktop not found, skipping"
-          }
-
           if (Test-Path "assets/icon.ico") {
-            $args += @("--icon", "assets\icon.ico")
+            $buildArgs += @("--icon", "assets\icon.ico")
           }
 
-          Write-Host "Running: python -m PyInstaller $args"
-          & python -m PyInstaller @args
+          Write-Host "Running: python -m PyInstaller $buildArgs"
+          & python -m PyInstaller @buildArgs
 
       - name: Verify build output
         run: dir dist\
